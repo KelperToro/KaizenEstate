@@ -1,0 +1,57 @@
+﻿@page "/apartment/{Id:int}"
+@using KaizenEstate.Shared.Models
+@using KaizenEstate.Services
+@inject ClientApiService ApiService
+@inject NavigationManager NavManager
+
+@if (apartment == null)
+{
+    <div class="text-center mt-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p>Загрузка информации...</p>
+    </div>
+}
+else
+{
+    <div class="container mt-3">
+        <button class="btn btn-secondary mb-3" @onclick="GoBack">← Назад</button>
+
+        <div class="card shadow-lg">
+            <img src="@apartment.ImageUrl" class="card-img-top" alt="@apartment.Title" style="max-height: 400px; object-fit: cover;">
+
+            <div class="card-body">
+                <h2 class="card-title">@apartment.Title</h2>
+                <h4 class="text-primary mb-3">@apartment.Price.ToString("N0") ₽</h4>
+
+                <h6 class="text-muted">📍 @apartment.Address</h6>
+                <hr />
+                <p class="card-text lead">@apartment.Description</p>
+
+                <div class="mt-4">
+                    <button class="btn btn-success btn-lg w-100">📞 Позвонить продавцу</button>
+                </div>
+            </div>
+            <div class="card-footer text-muted">
+                Добавлено: @apartment.CreatedAt.ToShortDateString()
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; } // Получаем ID из адресной строки
+
+    private Apartment? apartment;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Загружаем данные по ID
+        apartment = await ApiService.GetApartmentByIdAsync(Id);
+    }
+
+    private void GoBack()
+    {
+        NavManager.NavigateTo("/");
+    }
+}

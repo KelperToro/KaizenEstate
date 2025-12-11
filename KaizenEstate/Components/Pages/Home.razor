@@ -1,0 +1,52 @@
+﻿@page "/"
+@using KaizenEstate.Shared.Models
+@using KaizenEstate.Services
+@inject ClientApiService ApiService
+
+<h3 class="mb-4">🏠 Агентство "Домикс"</h3>
+
+@if (apartments == null)
+{
+    <div class="alert alert-info">
+        Загрузка объектов... (Если долго висит - проверь, запущен ли API)
+    </div>
+}
+else
+{
+    <div class="d-flex flex-wrap gap-3">
+        @foreach (var item in apartments)
+        {
+            <div class="card shadow-sm" style="width: 18rem;">
+                <img src="@(string.IsNullOrEmpty(item.ImageUrl) ? "https://via.placeholder.com/300" : item.ImageUrl)"
+                     class="card-img-top"
+                     style="height: 200px; object-fit: cover;"
+                     alt="@item.Title">
+
+                <div class="card-body">
+                    <h5 class="card-title">@item.Title</h5>
+                    <p class="card-text text-muted">@item.Address</p>
+                    <h6 class="card-subtitle mb-2 text-primary fw-bold">
+                        @item.Price.ToString("N0") ₽
+                    </h6>
+                    <a href="/apartment/@item.Id" class="btn btn-outline-primary w-100">Подробнее</a>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<Apartment>? apartments;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            apartments = await ApiService.GetApartmentsAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"ОШИБКА: {ex.Message}");
+        }
+    }
+}

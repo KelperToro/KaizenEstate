@@ -1,0 +1,6 @@
+@KaizenEstate.API_HostAddress = http://localhost:5155
+
+GET {{KaizenEstate.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
