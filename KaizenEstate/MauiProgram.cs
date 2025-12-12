@@ -1,7 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Components.Authorization;
 using KaizenEstate.Services;
-
+using Microsoft.AspNetCore.Components.Authorization;
+using KaizenEstate.Shared.Models;
+using Microsoft.Maui.Hosting;           // <--- Чинит ошибку "MauiApp не найден"
+using Microsoft.Maui.Controls.Hosting;  // <--- Чинит ошибку "MauiApp не найден"
+using System.Net.Http;                  // <--- Чинит HttpClient
 
 namespace KaizenEstate
 {
@@ -10,6 +13,8 @@ namespace KaizenEstate
         public static MauiApp CreateMauiApp()
         {
             var builder = MauiApp.CreateBuilder();
+
+            // ВНИМАНИЕ: Тут должно быть <App>, а не <EstateApplication>!
             builder
                 .UseMauiApp<App>()
                 .ConfigureFonts(fonts =>
@@ -23,17 +28,16 @@ namespace KaizenEstate
             builder.Services.AddBlazorWebViewDeveloperTools();
 #endif
 
-            // === 2. НАСТРОЙКИ ПОДКЛЮЧЕНИЯ ===
+            // Настройки клиента (твой порт 7128)
             builder.Services.AddScoped(sp => new HttpClient
             {
-        
                 BaseAddress = new Uri("https://localhost:7128/")
             });
 
             builder.Services.AddScoped<ClientApiService>();
 
+            // Авторизация
             builder.Services.AddAuthorizationCore();
-
             builder.Services.AddScoped<AuthService>();
             builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<AuthService>());
 

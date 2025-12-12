@@ -1,0 +1,52 @@
+﻿@page "/register"
+@using KaizenEstate.Shared.Models
+@using KaizenEstate.Services
+@inject AuthService AuthService
+@inject NavigationManager NavManager
+
+<div class="d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="card shadow p-4" style="width: 100%; max-width: 400px;">
+        <h3 class="text-center mb-4">Регистрация</h3>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger">@errorMessage</div>
+        }
+
+        <EditForm Model="registerModel" OnValidSubmit="HandleRegister">
+            <DataAnnotationsValidator />
+
+            <div class="mb-3">
+                <label>ФИО</label>
+                <InputText @bind-Value="registerModel.FullName" class="form-control" />
+            </div>
+            <div class="mb-3">
+                <label>Email</label>
+                <InputText @bind-Value="registerModel.Email" class="form-control" />
+            </div>
+            <div class="mb-3">
+                <label>Пароль</label>
+                <InputText @bind-Value="registerModel.Password" type="password" class="form-control" />
+            </div>
+            <div class="mb-3">
+                <label>Повтор пароля</label>
+                <InputText @bind-Value="registerModel.ConfirmPassword" type="password" class="form-control" />
+            </div>
+
+            <button type="submit" class="btn btn-success w-100 mb-2">Создать аккаунт</button>
+            <div class="text-center"><a href="/login">Войти</a></div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private RegisterModel registerModel = new();
+    private string? errorMessage;
+
+    private async Task HandleRegister()
+    {
+        var error = await AuthService.RegisterAsync(registerModel);
+        if (error == null) NavManager.NavigateTo("/");
+        else errorMessage = error;
+    }
+}

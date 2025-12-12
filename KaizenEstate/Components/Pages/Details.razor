@@ -1,36 +1,61 @@
 ﻿@page "/apartment/{Id:int}"
 @using KaizenEstate.Shared.Models
 @using KaizenEstate.Services
+@using System.Security.Claims
 @inject ClientApiService ApiService
 @inject NavigationManager NavManager
+@inject AuthenticationStateProvider AuthStateProvider
 
 @if (apartment == null)
 {
     <div class="text-center mt-5">
-        <div class="spinner-border text-primary" role="status"></div>
-        <p>Загрузка информации...</p>
+        <div class="spinner-border text-primary"></div>
+        <p>Загрузка...</p>
     </div>
 }
 else
 {
-    <div class="container mt-3">
+    <div class="container mt-3 pb-5">
         <button class="btn btn-secondary mb-3" @onclick="GoBack">← Назад</button>
 
         <div class="card shadow-lg">
-            <img src="@apartment.ImageUrl" class="card-img-top" alt="@apartment.Title" style="max-height: 400px; object-fit: cover;">
+            <img src="@(string.IsNullOrEmpty(apartment.ImageUrl) ? "https://via.placeholder.com/600" : apartment.ImageUrl)"
+                 class="card-img-top"
+                 style="max-height: 400px; object-fit: cover;"
+                 alt="@apartment.Title">
 
             <div class="card-body">
                 <h2 class="card-title">@apartment.Title</h2>
                 <h4 class="text-primary mb-3">@apartment.Price.ToString("N0") ₽</h4>
-
                 <h6 class="text-muted">📍 @apartment.Address</h6>
                 <hr />
                 <p class="card-text lead">@apartment.Description</p>
 
                 <div class="mt-4">
-                    <button class="btn btn-success btn-lg w-100">📞 Позвонить продавцу</button>
+                    @if (isApplicationSent)
+                    {
+                        <div class="alert alert-success">
+                            ✅ Заявка отправлена! Менеджер свяжется с вами.
+                        </div>
+                    }
+                    else
+                    {
+                        <AuthorizeView>
+                            <Authorized>
+                                <button class="btn btn-success btn-lg w-100" @onclick="SendApplication">
+                                    📝 Оставить заявку
+                                </button>
+                            </Authorized>
+                            <NotAuthorized>
+                                <div class="alert alert-warning text-center">
+                                    Чтобы оставить заявку, нужно <a href="login">войти</a> или <a href="register">зарегистрироваться</a>.
+                                </div>
+                            </NotAuthorized>
+                        </AuthorizeView>
+                    }
                 </div>
             </div>
+
             <div class="card-footer text-muted">
                 Добавлено: @apartment.CreatedAt.ToShortDateString()
             </div>
@@ -39,15 +64,41 @@ else
 }
 
 @code {
-    [Parameter]
-    public int Id { get; set; } // Получаем ID из адресной строки
-
+    [Parameter] public int Id { get; set; }
     private Apartment? apartment;
+    private bool isApplicationSent = false;
 
     protected override async Task OnInitializedAsync()
     {
-        // Загружаем данные по ID
         apartment = await ApiService.GetApartmentByIdAsync(Id);
+    }
+
+    private async Task SendApplication()
+    {
+        // 1. Узнаем, кто нажал кнопку (получаем ID текущего юзера)
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity != null && user.Identity.IsAuthenticated)
+        {
+            var userIdString = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (int.TryParse(userIdString, out int userId))
+            {
+                // 2. Формируем заявку
+                var app = new EstateApplication
+                {
+                    ApartmentId = apartment!.Id,
+                    UserId = userId
+                };
+
+                // 3. Отправляем на сервер
+                await ApiService.CreateApplicationAsync(app);
+
+                // 4. Показываем сообщение об успехе
+                isApplicationSent = true;
+            }
+        }
     }
 
     private void GoBack()

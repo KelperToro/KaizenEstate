@@ -13,5 +13,7 @@ namespace KaizenEstate.API.Data
         public DbSet<Apartment> Apartments { get; set; }
 
         public DbSet<User> Users { get; set; }
+
+        public DbSet<EstateApplication> Applications { get; set; }
     }
 }

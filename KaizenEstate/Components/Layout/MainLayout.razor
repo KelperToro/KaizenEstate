@@ -1,3 +1,40 @@
 ﻿@inherits LayoutComponentBase
+@inject KaizenEstate.Services.AuthService AuthService
+@inject NavigationManager NavManager
 
-@Body
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <div class="top-row px-4 auth d-flex justify-content-between align-items-center">
+            <a href="/" class="fw-bold text-decoration-none text-dark">KaizenEstate</a>
+            
+            <div class="d-flex gap-2 align-items-center">
+                <AuthorizeView>
+                    <Authorized>
+                        <span class="me-2">Привет, <b>@context.User.Identity?.Name</b>!</span>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="Logout">Выйти</button>
+                    </Authorized>
+                    <NotAuthorized>
+                        <a href="login" class="btn btn-sm btn-outline-primary">Войти</a>
+                        <a href="register" class="btn btn-sm btn-primary">Регистрация</a>
+                    </NotAuthorized>
+                </AuthorizeView>
+            </div>
+        </div>
+
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+@code {
+    private void Logout()
+    {
+        AuthService.Logout();
+        NavManager.NavigateTo("/login");
+    }
+}

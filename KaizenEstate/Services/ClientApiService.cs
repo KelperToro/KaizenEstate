@@ -1,6 +1,7 @@
 ﻿using System.Net.Http.Json;
 using KaizenEstate.Shared.Models;
 
+
 namespace KaizenEstate.Services
 {
     public class ClientApiService
@@ -28,5 +29,11 @@ namespace KaizenEstate.Services
                 return null;
             }
         }
+
+        public async Task CreateApplicationAsync(EstateApplication application)
+        {
+            await _httpClient.PostAsJsonAsync("api/applications", application);
+        }
+
     }
 }
