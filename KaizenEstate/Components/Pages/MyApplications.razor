@@ -1,0 +1,81 @@
+﻿@page "/my-applications"
+@using KaizenEstate.Shared.Models
+@using KaizenEstate.Services
+@using System.Security.Claims
+@inject ClientApiService ApiService
+@inject AuthenticationStateProvider AuthStateProvider
+@attribute [Authorize]
+
+<div class="container mt-3">
+    <h3>📂 Мои заявки</h3>
+
+    @if (isLoading)
+    {
+        <div class="text-center mt-4">
+            <div class="spinner-border text-primary"></div>
+            <p>Загружаем ваши заявки...</p>
+        </div>
+    }
+    else if (applications == null || applications.Count == 0)
+    {
+        <div class="alert alert-info mt-4">
+            У вас пока нет активных заявок. <a href="/">Выбрать квартиру</a>
+        </div>
+    }
+    else
+    {
+        <div class="row mt-4">
+            @foreach (var app in applications)
+            {
+                <div class="col-12 mb-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body d-flex align-items-center gap-3">
+                            <img src="@(app.Apartment?.ImageUrl ?? "https://via.placeholder.com/100")"
+                                 style="width: 100px; height: 80px; object-fit: cover; border-radius: 8px;" />
+
+                            <div class="flex-grow-1">
+                                <h5 class="mb-1">@app.Apartment?.Title</h5>
+                                <p class="mb-1 text-muted small">@app.Apartment?.Address</p>
+                                <span class="badge bg-primary">@app.Status</span>
+                                <small class="text-muted ms-2">@app.CreatedAt.ToLocalTime().ToString("g")</small>
+                            </div>
+
+                            <div class="text-end">
+                                <h6 class="text-primary mb-0">@app.Apartment?.Price.ToString("N0") ₽</h6>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<EstateApplication>? applications;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            var userIdString = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (int.TryParse(userIdString, out int userId))
+            {
+                applications = await ApiService.GetApplicationsByUserIdAsync(userId);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Ошибка загрузки заявок: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

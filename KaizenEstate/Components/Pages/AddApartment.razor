@@ -1,0 +1,81 @@
+﻿@page "/add-apartment"
+@using KaizenEstate.Shared.Models
+@using KaizenEstate.Services
+@inject ClientApiService ApiService
+@inject NavigationManager NavManager
+
+<div class="container mt-3">
+    <h3>➕ Добавить квартиру</h3>
+
+    <EditForm Model="apartment" OnValidSubmit="HandleSubmit">
+        <DataAnnotationsValidator />
+
+        <div class="mb-3">
+            <label>Название</label>
+            <InputText @bind-Value="apartment.Title" class="form-control" placeholder="Например: Студия в центре" />
+        </div>
+
+        <div class="mb-3">
+            <label>Адрес</label>
+            <InputText @bind-Value="apartment.Address" class="form-control" />
+        </div>
+
+        <div class="row">
+            <div class="col-6 mb-3">
+                <label>Цена (₽)</label>
+                <InputNumber @bind-Value="apartment.Price" class="form-control" />
+            </div>
+            <div class="col-3 mb-3">
+                <label>Комнат</label>
+                <InputNumber @bind-Value="apartment.Rooms" class="form-control" />
+            </div>
+            <div class="col-3 mb-3">
+                <label>Площадь (м²)</label>
+                <InputNumber @bind-Value="apartment.Area" class="form-control" />
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label>Описание</label>
+            <InputTextArea @bind-Value="apartment.Description" class="form-control" rows="3" />
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label">Фотография</label>
+            <button type="button" class="btn btn-outline-secondary d-block w-100" @onclick="PickImage">
+                @(selectedFile == null ? "📷 Выбрать фото" : $"✅ {selectedFile.FileName}")
+            </button>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 btn-lg">Сохранить</button>
+    </EditForm>
+</div>
+
+@code {
+    private Apartment apartment = new();
+    private FileResult? selectedFile;
+
+    private async Task PickImage()
+    {
+        try
+        {
+            // Открываем галерею
+            selectedFile = await MediaPicker.Default.PickPhotoAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Ошибка выбора фото: " + ex.Message);
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        // Отправляем данные
+        var success = await ApiService.CreateApartmentAsync(apartment, selectedFile);
+
+        if (success)
+        {
+            NavManager.NavigateTo("/"); // Если ок — на главную
+        }
+    }
+}

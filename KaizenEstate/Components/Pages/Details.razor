@@ -28,27 +28,39 @@ else
                 <h2 class="card-title">@apartment.Title</h2>
                 <h4 class="text-primary mb-3">@apartment.Price.ToString("N0") ₽</h4>
                 <h6 class="text-muted">📍 @apartment.Address</h6>
+
+                <div class="d-flex gap-4 my-3">
+                    <div><strong>Комнат:</strong> @apartment.Rooms</div>
+                    <div><strong>Площадь:</strong> @apartment.Area м²</div>
+                </div>
+
                 <hr />
                 <p class="card-text lead">@apartment.Description</p>
 
                 <div class="mt-4">
                     @if (isApplicationSent)
                     {
-                        <div class="alert alert-success">
-                            ✅ Заявка отправлена! Менеджер свяжется с вами.
-                        </div>
+                        <div class="alert alert-success">✅ Заявка отправлена!</div>
+                    }
+                    else if (isError)
+                    {
+                        <div class="alert alert-warning">⚠️ Вы уже отправляли заявку на эту квартиру.</div>
                     }
                     else
                     {
                         <AuthorizeView>
                             <Authorized>
-                                <button class="btn btn-success btn-lg w-100" @onclick="SendApplication">
+                                <button class="btn btn-success btn-lg w-100 mb-2" @onclick="SendApplication">
                                     📝 Оставить заявку
+                                </button>
+
+                                <button class="btn btn-danger w-100" @onclick="DeleteApartment">
+                                    🗑 Удалить квартиру (Админ)
                                 </button>
                             </Authorized>
                             <NotAuthorized>
                                 <div class="alert alert-warning text-center">
-                                    Чтобы оставить заявку, нужно <a href="login">войти</a> или <a href="register">зарегистрироваться</a>.
+                                    Чтобы оставить заявку, нужно <a href="login">войти</a>.
                                 </div>
                             </NotAuthorized>
                         </AuthorizeView>
@@ -67,6 +79,7 @@ else
     [Parameter] public int Id { get; set; }
     private Apartment? apartment;
     private bool isApplicationSent = false;
+    private bool isError = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -75,29 +88,48 @@ else
 
     private async Task SendApplication()
     {
-        // 1. Узнаем, кто нажал кнопку (получаем ID текущего юзера)
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 
         if (user.Identity != null && user.Identity.IsAuthenticated)
         {
             var userIdString = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
             if (int.TryParse(userIdString, out int userId))
             {
-                // 2. Формируем заявку
                 var app = new EstateApplication
                 {
                     ApartmentId = apartment!.Id,
                     UserId = userId
                 };
 
-                // 3. Отправляем на сервер
-                await ApiService.CreateApplicationAsync(app);
+                var success = await ApiService.CreateApplicationAsync(app);
 
-                // 4. Показываем сообщение об успехе
-                isApplicationSent = true;
+                if (success)
+                {
+                    isApplicationSent = true;
+                    isError = false;
+                }
+                else
+                {
+                    isError = true;
+                }
             }
+        }
+    }
+
+    // === ЛОГИКА УДАЛЕНИЯ ===
+    private async Task DeleteApartment()
+    {
+        bool confirm = await Application.Current.MainPage.DisplayAlert(
+            "Подтверждение",
+            "Удалить эту квартиру?",
+            "Да",
+            "Нет");
+
+        if (confirm)
+        {
+            await ApiService.DeleteApartmentAsync(apartment!.Id);
+            NavManager.NavigateTo("/");
         }
     }
 

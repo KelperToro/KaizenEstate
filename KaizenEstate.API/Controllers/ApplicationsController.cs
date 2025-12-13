@@ -20,7 +20,14 @@ namespace KaizenEstate.API.Controllers
         [HttpPost]
         public async Task<ActionResult<EstateApplication>> CreateApplication(EstateApplication application)
         {
-            // Задаем начальные значения
+            var exists = await _context.Applications
+                .AnyAsync(a => a.UserId == application.UserId && a.ApartmentId == application.ApartmentId);
+
+            if (exists)
+            {
+                return BadRequest("Вы уже отправили заявку на эту квартиру.");
+            }
+
             application.CreatedAt = DateTime.UtcNow;
             application.Status = "Новая";
 

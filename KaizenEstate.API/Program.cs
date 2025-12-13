@@ -1,5 +1,6 @@
 using KaizenEstate.API.Data;
 using Microsoft.EntityFrameworkCore;
+using KaizenEstate.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // 1. Добавляем контроллеры
 builder.Services.AddControllers();
+builder.Services.AddScoped<IObjectStorageService, MinioService>();
 
 // 2. Добавляем Swagger (теперь, после установки пакета, ошибки исчезнут)
 builder.Services.AddEndpointsApiExplorer();

@@ -19,7 +19,12 @@ namespace KaizenEstate.Shared.Models
         [Column(TypeName = "decimal(18,2)")]
         public decimal Price { get; set; }
 
-        public string ImageUrl { get; set; } = string.Empty; 
+    
+        public int Rooms { get; set; } 
+        public double Area { get; set; } 
+        
+
+        public string ImageUrl { get; set; } = string.Empty;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
