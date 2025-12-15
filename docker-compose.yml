@@ -1,7 +1,7 @@
-version: '3.8'
+version: '3.3'
 
 services:
-  # 1. База Данных
+  # === 1. База Данных ===
   postgres_db:
     image: postgres:16
     container_name: kaizen_postgres
@@ -15,19 +15,21 @@ services:
       - postgres_data_vps:/var/lib/postgresql/data
     restart: always
 
-  # 2. Твой API (Сервер)
+  # === 2. Твой API (Сайт) ===
   kaizen-api:
     build:
-      context: ./KaizenEstate.API  # Путь к папке API
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: KaizenEstate.API/Dockerfile
     container_name: kaizen_api_container
     depends_on:
       - postgres_db
       - minio
     ports:
-      - "8080:8080" # Открываем порт 8080 наружу
+      - "8080:8080"
     environment:
-      # Важно: Host=postgres_db — это имя сервиса базы внутри докера
+      # Включаем Swagger
+      ASPNETCORE_ENVIRONMENT: "Development"
+      # Подключение к БД
       ConnectionStrings__DefaultConnection: "Host=postgres_db;Port=5432;Database=kaizendb;Username=admin;Password=password123"
       # Настройки MinIO
       Minio__Endpoint: "minio:9000"
@@ -35,7 +37,7 @@ services:
       Minio__SecretKey: "minioadmin"
     restart: always
 
-  # 3. Хранилище картинок MinIO
+  # === 3. Хранилище MinIO ===
   minio:
     image: minio/minio
     container_name: kaizen_minio
@@ -50,7 +52,7 @@ services:
       - minio_data_vps:/data
     restart: always
 
-  # 4. Настройка MinIO (создает папку images)
+  # === 4. Настройка MinIO ===
   createbuckets:
     image: minio/mc
     depends_on:
