@@ -62,5 +62,28 @@ namespace KaizenEstate.Services
         {
             await _httpClient.DeleteAsync($"api/apartments/{id}");
         }
+        //
+        public async Task<bool> UpdateApartmentAsync(int id, Apartment apartment, FileResult? file)
+        {
+            var content = new MultipartFormDataContent();
+
+            content.Add(new StringContent(apartment.Title ?? ""), "title");
+            content.Add(new StringContent(apartment.Address ?? ""), "address");
+            content.Add(new StringContent(apartment.Description ?? ""), "description");
+            content.Add(new StringContent(apartment.Price.ToString()), "price");
+            content.Add(new StringContent(apartment.Rooms.ToString()), "rooms");
+            content.Add(new StringContent(apartment.Area.ToString()), "area");
+
+            if (file != null)
+            {
+                var stream = await file.OpenReadAsync();
+                var fileContent = new StreamContent(stream);
+                content.Add(fileContent, "image", file.FileName);
+            }
+
+            // Обрати внимание: используем PutAsync
+            var response = await _httpClient.PutAsync($"api/apartments/{id}", content);
+            return response.IsSuccessStatusCode;
+        }
     }
 }

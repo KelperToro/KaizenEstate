@@ -16,7 +16,7 @@ namespace KaizenEstate.Shared.Models
         [Required]
         public string Address { get; set; } = string.Empty;
 
-        [Column(TypeName = "decimal(18,2)")]
+        [Column(TypeName = "decimal(28,2)")]
         public decimal Price { get; set; }
 
     

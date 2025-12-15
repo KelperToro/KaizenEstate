@@ -33,6 +33,21 @@
                 <InputText @bind-Value="registerModel.ConfirmPassword" type="password" class="form-control" />
             </div>
 
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="adminCheck" @bind="isAdminRegistration">
+                <label class="form-check-label" for="adminCheck">
+                    Я сотрудник (Администратор)
+                </label>
+            </div>
+
+            @if (isAdminRegistration)
+            {
+                <div class="mb-3 p-2 bg-light border rounded">
+                    <label class="small text-muted">Код организации:</label>
+                    <InputText @bind-Value="registerModel.SecretCode" class="form-control form-control-sm" placeholder="Введите секретный код" />
+                </div>
+            }
+
             <button type="submit" class="btn btn-success w-100 mb-2">Создать аккаунт</button>
             <div class="text-center"><a href="/login">Войти</a></div>
         </EditForm>
@@ -42,9 +57,18 @@
 @code {
     private RegisterModel registerModel = new();
     private string? errorMessage;
+    
+    // Переменная для управления видимостью поля
+    private bool isAdminRegistration = false;
 
     private async Task HandleRegister()
     {
+        // Если галочка не стоит — очищаем код, чтобы не отправлять мусор
+        if (!isAdminRegistration)
+        {
+            registerModel.SecretCode = null;
+        }
+
         var error = await AuthService.RegisterAsync(registerModel);
         if (error == null) NavManager.NavigateTo("/");
         else errorMessage = error;

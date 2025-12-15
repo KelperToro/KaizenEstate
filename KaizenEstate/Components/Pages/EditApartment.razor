@@ -1,0 +1,106 @@
+﻿@page "/edit-apartment/{Id:int}"
+@using KaizenEstate.Shared.Models
+@using KaizenEstate.Services
+@inject ClientApiService ApiService
+@inject NavigationManager NavManager
+@attribute [Authorize] 
+
+<div class="container mt-3">
+    <h3>✏️ Редактировать квартиру</h3>
+
+    @if (apartment == null)
+    {
+        <p>Загрузка...</p>
+    }
+    else
+    {
+        <EditForm Model="apartment" OnValidSubmit="HandleSubmit">
+            <DataAnnotationsValidator />
+
+            <div class="mb-3">
+                <label>Название</label>
+                <InputText @bind-Value="apartment.Title" class="form-control" />
+            </div>
+
+            <div class="mb-3">
+                <label>Адрес</label>
+                <InputText @bind-Value="apartment.Address" class="form-control" />
+            </div>
+
+            <div class="row">
+                <div class="col-6 mb-3">
+                    <label>Цена (₽)</label>
+                    <InputNumber @bind-Value="apartment.Price" class="form-control" />
+                </div>
+                <div class="col-3 mb-3">
+                    <label>Комнат</label>
+                    <InputNumber @bind-Value="apartment.Rooms" class="form-control" />
+                </div>
+                <div class="col-3 mb-3">
+                    <label>Площадь (м²)</label>
+                    <InputNumber @bind-Value="apartment.Area" class="form-control" />
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label>Описание</label>
+                <InputTextArea @bind-Value="apartment.Description" class="form-control" rows="5" />
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">Обновить фото (необязательно)</label>
+                @if (!string.IsNullOrEmpty(apartment.ImageUrl))
+                {
+                    <div class="mb-2">
+                        <img src="@apartment.ImageUrl" width="100" class="rounded" />
+                        <span class="text-muted small">Текущее фото</span>
+                    </div>
+                }
+                <button type="button" class="btn btn-outline-secondary d-block w-100" @onclick="PickImage">
+                    @(selectedFile == null ? "📷 Выбрать новое фото" : $"✅ {selectedFile.FileName}")
+                </button>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 btn-lg">Сохранить изменения</button>
+            <a href="/apartment/@apartment.Id" class="btn btn-link w-100 mt-2">Отмена</a>
+        </EditForm>
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private Apartment? apartment;
+    private FileResult? selectedFile;
+
+    protected override async Task OnInitializedAsync()
+    {
+        apartment = await ApiService.GetApartmentByIdAsync(Id);
+    }
+
+    private async Task PickImage()
+    {
+        try
+        {
+            selectedFile = await MediaPicker.Default.PickPhotoAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Ошибка: " + ex.Message);
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (apartment == null) return;
+        
+        var success = await ApiService.UpdateApartmentAsync(apartment.Id, apartment, selectedFile);
+        if (success)
+        {
+            NavManager.NavigateTo($"/apartment/{apartment.Id}");
+        }
+        else
+        {
+             Console.WriteLine("Не удалось обновить");
+        }
+    }
+}

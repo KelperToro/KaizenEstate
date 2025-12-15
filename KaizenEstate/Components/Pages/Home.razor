@@ -3,50 +3,126 @@
 @using KaizenEstate.Services
 @inject ClientApiService ApiService
 
-<h3 class="mb-4">🏠 Агентство "Домикс"</h3>
+<div class="mb-5 text-center bg-light p-5 rounded-3 shadow-sm">
+    <h1 class="display-5 fw-bold">Агентство "Домикс"</h1>
+    <p class="lead">Найдите квартиру своей мечты или сдайте свою.</p>
+</div>
 
-@if (apartments == null)
+@* === БЛОК ФИЛЬТРОВ === *@
+<div class="row mb-4 g-2">
+    <div class="col-md-6">
+        <input type="text" class="form-control" placeholder="🔍 Поиск по названию или адресу..."
+               @bind="searchText" @bind:event="oninput" />
+    </div>
+    <div class="col-md-3">
+        <select class="form-select" @bind="selectedRooms">
+            <option value="0">Все комнаты</option>
+            <option value="1">1 комната</option>
+            <option value="2">2 комнаты</option>
+            <option value="3">3+ комнаты</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <button class="btn btn-primary w-100" @onclick="ApplyFilters">Применить</button>
+    </div>
+</div>
+
+@if (filteredApartments == null)
 {
-    <div class="alert alert-info">
-        Загрузка объектов... (Если долго висит - проверь, запущен ли API)
+    <div class="d-flex justify-content-center">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
+}
+else if (!filteredApartments.Any())
+{
+    <div class="alert alert-warning text-center">
+        По вашему запросу ничего не найдено. 😿
     </div>
 }
 else
 {
-    <div class="d-flex flex-wrap gap-3">
-        @foreach (var item in apartments)
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        @foreach (var item in filteredApartments)
         {
-            <div class="card shadow-sm" style="width: 18rem;">
-                <img src="@(string.IsNullOrEmpty(item.ImageUrl) ? "https://via.placeholder.com/300" : item.ImageUrl)"
-                     class="card-img-top"
-                     style="height: 200px; object-fit: cover;"
-                     alt="@item.Title">
+            <div class="col">
+                <div class="card h-100 shadow-sm border-0 hover-effect">
+                    <img src="@(string.IsNullOrEmpty(item.ImageUrl) ? "https://via.placeholder.com/300" : item.ImageUrl)"
+                         class="card-img-top"
+                         style="height: 220px; object-fit: cover;"
+                         alt="@item.Title">
 
-                <div class="card-body">
-                    <h5 class="card-title">@item.Title</h5>
-                    <p class="card-text text-muted">@item.Address</p>
-                    <h6 class="card-subtitle mb-2 text-primary fw-bold">
-                        @item.Price.ToString("N0") ₽
-                    </h6>
-                    <a href="/apartment/@item.Id" class="btn btn-outline-primary w-100">Подробнее</a>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="card-title text-truncate" title="@item.Title">@item.Title</h5>
+                            <span class="badge bg-success">@item.Price.ToString("N0") ₽</span>
+                        </div>
+                        <p class="card-text text-muted small"><i class="bi bi-geo-alt-fill"></i> @item.Address</p>
+
+                        <div class="d-flex justify-content-between text-muted small mt-3">
+                            <span>🏠 @item.Rooms комн.</span>
+                            <span>wb @item.Area м²</span>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white border-0 pb-3">
+                        <a href="/apartment/@item.Id" class="btn btn-outline-primary w-100">Подробнее</a>
+                    </div>
                 </div>
             </div>
         }
     </div>
 }
 
+<style>
+    .hover-effect:hover {
+        transform: translateY(-5px);
+        transition: transform 0.2s;
+    }
+</style>
+
 @code {
-    private List<Apartment>? apartments;
+    private List<Apartment>? allApartments;
+    private List<Apartment>? filteredApartments;
+
+    // Поля фильтрации
+    private string searchText = "";
+    private int selectedRooms = 0;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            apartments = await ApiService.GetApartmentsAsync();
+            allApartments = await ApiService.GetApartmentsAsync();
+            filteredApartments = allApartments; // Изначально показываем все
         }
         catch (Exception ex)
         {
             Console.WriteLine($"ОШИБКА: {ex.Message}");
         }
+    }
+
+    private void ApplyFilters()
+    {
+        if (allApartments == null) return;
+
+        var query = allApartments.AsEnumerable();
+
+        // Фильтр по тексту
+        if (!string.IsNullOrWhiteSpace(searchText))
+        {
+            query = query.Where(a =>
+                (a.Title?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (a.Address?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false));
+        }
+
+        // Фильтр по комнатам
+        if (selectedRooms > 0)
+        {
+            if (selectedRooms == 3)
+                query = query.Where(a => a.Rooms >= 3);
+            else
+                query = query.Where(a => a.Rooms == selectedRooms);
+        }
+
+        filteredApartments = query.ToList();
     }
 }

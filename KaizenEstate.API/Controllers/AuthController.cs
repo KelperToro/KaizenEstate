@@ -12,10 +12,12 @@ namespace KaizenEstate.API.Controllers
     public class AuthController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly IConfiguration _configuration;
 
-        public AuthController(ApplicationDbContext context)
+        public AuthController(ApplicationDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
         // POST: api/auth/register
@@ -27,12 +29,21 @@ namespace KaizenEstate.API.Controllers
                 return BadRequest("Такой пользователь уже существует");
             }
 
+            string role = "User";
+
+            var adminCode = _configuration["AdminSettings:SecretCode"];
+
+            if (!string.IsNullOrEmpty(adminCode) && request.SecretCode == adminCode)
+            {
+                role = "Admin";
+            }
+
             var user = new User
             {
                 FullName = request.FullName,
                 Email = request.Email,
-                Role = "User", 
-                PasswordHash = HashPassword(request.Password) 
+                Role = role,
+                PasswordHash = HashPassword(request.Password)
             };
 
             _context.Users.Add(user);
@@ -59,7 +70,6 @@ namespace KaizenEstate.API.Controllers
             return Ok(user);
         }
 
-        // (SHA256)
         private string HashPassword(string password)
         {
             using var sha256 = SHA256.Create();

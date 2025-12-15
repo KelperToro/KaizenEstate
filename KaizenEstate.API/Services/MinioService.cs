@@ -6,11 +6,11 @@ namespace KaizenEstate.API.Services
     public class MinioService : IObjectStorageService
     {
         private readonly IMinioClient _minioClient;
-        private const string BucketName = "apartments"; 
+        private const string BucketName = "apartments";
 
         public MinioService()
         {
-            // Настройки берем из docker-compose (minioadmin / minioadmin)
+            // Настройки подключения к MinIO
             _minioClient = new MinioClient()
                 .WithEndpoint("localhost", 9000)
                 .WithCredentials("minioadmin", "minioadmin")
@@ -24,6 +24,7 @@ namespace KaizenEstate.API.Services
             if (!found)
             {
                 await _minioClient.MakeBucketAsync(new MakeBucketArgs().WithBucket(BucketName));
+
                 string policy = $@"{{
                   ""Version"": ""2012-10-17"",
                   ""Statement"": [{{
@@ -36,10 +37,9 @@ namespace KaizenEstate.API.Services
                 await _minioClient.SetPolicyAsync(new SetPolicyArgs().WithBucket(BucketName).WithPolicy(policy));
             }
 
-            // 2. Генерируем уникальное имя файла (чтобы не затереть старые)
             var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
 
-            // 3. Загружаем
+            // 3. Загружаем поток
             using var stream = file.OpenReadStream();
             var putObjectArgs = new PutObjectArgs()
                 .WithBucket(BucketName)
@@ -49,11 +49,30 @@ namespace KaizenEstate.API.Services
                 .WithContentType(file.ContentType);
 
             await _minioClient.PutObjectAsync(putObjectArgs);
-
-            // 4. Возвращаем прямую ссылку на файл
-            // Важно: для эмулятора Android localhost - это 10.0.2.2, но браузер компа видит localhost.
-            // Пока вернем localhost, так как мы тестируем на Windows.
             return $"http://localhost:9000/{BucketName}/{fileName}";
+        }
+
+        // === МЕТОД УДАЛЕНИЯ ===
+        public async Task DeleteFileAsync(string imageUrl)
+        {
+            if (string.IsNullOrEmpty(imageUrl)) return;
+
+            try
+            {
+                var uri = new Uri(imageUrl);
+                // uri.LocalPath вернет "/apartments/d34d3-fsd3.jpg"
+                var fileName = Path.GetFileName(uri.LocalPath); // вернет "d34d3-fsd3.jpg"
+
+                var args = new RemoveObjectArgs()
+                    .WithBucket(BucketName)
+                    .WithObject(fileName);
+
+                await _minioClient.RemoveObjectAsync(args);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка удаления файла из MinIO: {ex.Message}");
+            }
         }
     }
 }
