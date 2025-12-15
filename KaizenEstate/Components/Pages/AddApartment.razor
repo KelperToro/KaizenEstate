@@ -59,7 +59,6 @@
     {
         try
         {
-            // Открываем галерею
             selectedFile = await MediaPicker.Default.PickPhotoAsync();
         }
         catch (Exception ex)
@@ -70,12 +69,20 @@
 
     private async Task HandleSubmit()
     {
-        // Отправляем данные
+        
         var success = await ApiService.CreateApartmentAsync(apartment, selectedFile);
 
         if (success)
         {
-            NavManager.NavigateTo("/"); // Если ок — на главную
+ 
+            NavManager.NavigateTo("/");
+        }
+        else
+        {
+            await Application.Current.MainPage.DisplayAlert(
+                "Ошибка",
+                "Не удалось добавить квартиру. Возможно, вы не Админ или истек срок сессии. Попробуйте перезайти.",
+                "OK");
         }
     }
 }

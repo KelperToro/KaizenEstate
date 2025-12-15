@@ -1,9 +1,12 @@
-﻿using System.Security.Cryptography;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using KaizenEstate.API.Data;
 using KaizenEstate.Shared.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 namespace KaizenEstate.API.Controllers
 {
@@ -20,7 +23,6 @@ namespace KaizenEstate.API.Controllers
             _configuration = configuration;
         }
 
-        // POST: api/auth/register
         [HttpPost("register")]
         public async Task<ActionResult<User>> Register(RegisterModel request)
         {
@@ -30,9 +32,10 @@ namespace KaizenEstate.API.Controllers
             }
 
             string role = "User";
-
+            // Читаем код из appsettings.json
             var adminCode = _configuration["AdminSettings:SecretCode"];
 
+            // Проверяем: если код не пустой и совпадает — даем Админа
             if (!string.IsNullOrEmpty(adminCode) && request.SecretCode == adminCode)
             {
                 role = "Admin";
@@ -53,21 +56,22 @@ namespace KaizenEstate.API.Controllers
         }
 
         [HttpPost("login")]
-        public async Task<ActionResult<User>> Login(LoginModel request)
+        public async Task<ActionResult> Login(LoginModel request)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
 
-            if (user == null)
+            if (user == null || user.PasswordHash != HashPassword(request.Password))
             {
-                return BadRequest("Пользователь не найден");
+                return BadRequest("Неверный логин или пароль");
             }
 
-            if (user.PasswordHash != HashPassword(request.Password))
-            {
-                return BadRequest("Неверный пароль");
-            }
+            string token = CreateToken(user);
 
-            return Ok(user);
+            return Ok(new
+            {
+                Token = token,
+                User = user
+            });
         }
 
         private string HashPassword(string password)
@@ -75,6 +79,35 @@ namespace KaizenEstate.API.Controllers
             using var sha256 = SHA256.Create();
             var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
             return Convert.ToBase64String(bytes);
+        }
+
+        private string CreateToken(User user)
+        {
+            List<Claim> claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, user.FullName),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role)
+            };
+
+            // БЕРЕМ КЛЮЧ ИЗ КОНФИГА (тот же, что и в Program.cs)
+            var jwtKey = _configuration["AppSettings:Token"];
+
+            if (string.IsNullOrEmpty(jwtKey))
+            {
+                jwtKey = "EtoOchenDlinniySecretniyKeyKotoriyNiktoNeUgadaet_Minimum64SimvolaDlyaSHA512";
+            }
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
+
+            var token = new JwtSecurityToken(
+                claims: claims,
+                expires: DateTime.Now.AddDays(1),
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }

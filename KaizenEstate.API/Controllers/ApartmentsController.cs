@@ -3,6 +3,7 @@ using KaizenEstate.API.Services;
 using KaizenEstate.Shared.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization; 
 
 namespace KaizenEstate.API.Controllers
 {
@@ -20,13 +21,15 @@ namespace KaizenEstate.API.Controllers
         }
 
         // GET: api/Apartments
-        [HttpGet]
+        // Оставляем открытым для всех (чтобы покупатели видели список)
+        [HttpGet] 
         public async Task<ActionResult<IEnumerable<Apartment>>> GetApartments()
         {
             return await _context.Apartments.ToListAsync();
         }
 
         // GET: api/Apartments/5
+        // Оставляем открытым (просмотр конкретной квартиры)
         [HttpGet("{id}")]
         public async Task<ActionResult<Apartment>> GetApartment(int id)
         {
@@ -41,7 +44,9 @@ namespace KaizenEstate.API.Controllers
         }
 
         // POST: api/Apartments
+        // ЗАКРЫТО: Только для Админов
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<Apartment>> PostApartment(
             [FromForm] string title,
             [FromForm] string address,
@@ -74,7 +79,9 @@ namespace KaizenEstate.API.Controllers
         }
 
         // PUT: api/Apartments/5
+        // ЗАКРЫТО: Только для Админов
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> PutApartment(int id, [FromForm] string title, [FromForm] string address,
             [FromForm] string description, [FromForm] decimal price, [FromForm] int rooms,
             [FromForm] double area, IFormFile? image)
@@ -122,7 +129,9 @@ namespace KaizenEstate.API.Controllers
         }
 
         // DELETE: api/Apartments/5
+        // ЗАКРЫТО: Только для Админов
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteApartment(int id)
         {
             var apartment = await _context.Apartments.FindAsync(id);

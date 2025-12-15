@@ -1,4 +1,4 @@
-version: '3.3'
+version: '3.8'
 
 services:
   # === 1. База Данных ===
@@ -12,32 +12,11 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data_vps:/var/lib/postgresql/data
+      # Используем локальный том, чтобы не путать с VPS
+      - postgres_data_local:/var/lib/postgresql/data
     restart: always
 
-  # === 2. Твой API (Сайт) ===
-  kaizen-api:
-    build:
-      context: .
-      dockerfile: KaizenEstate.API/Dockerfile
-    container_name: kaizen_api_container
-    depends_on:
-      - postgres_db
-      - minio
-    ports:
-      - "8080:8080"
-    environment:
-      # Включаем Swagger
-      ASPNETCORE_ENVIRONMENT: "Development"
-      # Подключение к БД
-      ConnectionStrings__DefaultConnection: "Host=postgres_db;Port=5432;Database=kaizendb;Username=admin;Password=password123"
-      # Настройки MinIO
-      Minio__Endpoint: "minio:9000"
-      Minio__AccessKey: "minioadmin"
-      Minio__SecretKey: "minioadmin"
-    restart: always
-
-  # === 3. Хранилище MinIO ===
+  # === 2. Хранилище MinIO ===
   minio:
     image: minio/minio
     container_name: kaizen_minio
@@ -49,10 +28,10 @@ services:
       MINIO_ROOT_PASSWORD: "minioadmin"
     command: server /data --console-address ":9001"
     volumes:
-      - minio_data_vps:/data
+      - minio_data_local:/data
     restart: always
 
-  # === 4. Настройка MinIO ===
+  # === 3. Настройка MinIO (Создание бакетов) ===
   createbuckets:
     image: minio/mc
     depends_on:
@@ -66,5 +45,5 @@ services:
       "
 
 volumes:
-  postgres_data_vps:
-  minio_data_vps:
+  postgres_data_local:
+  minio_data_local:

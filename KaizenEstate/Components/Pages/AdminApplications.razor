@@ -1,0 +1,73 @@
+﻿@page "/admin-applications"
+@using KaizenEstate.Shared.Models
+@using KaizenEstate.Services
+@inject ClientApiService ApiService
+@attribute [Authorize(Roles = "Admin")]
+
+<div class="container mt-3">
+    <h3>📂 Входящие заявки</h3>
+
+    @if (applications == null)
+    {
+        <div class="text-center">
+            <div class="spinner-border text-primary"></div>
+        </div>
+    }
+    else if (!applications.Any())
+    {
+        <div class="alert alert-info">Пока заявок нет.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered bg-white shadow-sm">
+                <thead class="table-light">
+                    <tr>
+                        <th>Дата</th>
+                        <th>Клиент</th>
+                        <th>Квартира</th>
+                        <th>Цена</th>
+                        <th>Статус</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var app in applications)
+                    {
+                        <tr>
+                            <td>@app.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td>
+                                <strong>@app.User?.FullName</strong><br/>
+                                <small class="text-muted">@app.User?.Email</small>
+                            </td>
+                            <td>
+                                <a href="/apartment/@app.ApartmentId">
+                                    @(app.Apartment?.Title ?? "Неизвестно")
+                                </a>
+                            </td>
+                            <td>@app.Apartment?.Price.ToString("N0") ₽</td>
+                            <td>
+                                <span class="badge bg-warning text-dark">@app.Status</span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<EstateApplication>? applications;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            applications = await ApiService.GetAllApplicationsAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Ошибка загрузки заявок: " + ex.Message);
+        }
+    }
+}

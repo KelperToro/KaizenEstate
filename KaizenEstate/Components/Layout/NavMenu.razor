@@ -6,6 +6,7 @@
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="flex-column">
+
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
                 <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Главная
@@ -19,14 +20,26 @@
                         <span class="bi bi-folder2-open-nav-menu" aria-hidden="true"></span> Мои заявки
                     </NavLink>
                 </div>
+            </Authorized>
+        </AuthorizeView>
 
+        <AuthorizeView Roles="Admin">
+            <Authorized>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="add-apartment">
                         <span class="bi bi-plus-square-nav-menu" aria-hidden="true"></span> Добавить (Админ)
                     </NavLink>
                 </div>
-            </Authorized>
 
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="admin-applications">
+                        <span class="bi bi-list-check-nav-menu" aria-hidden="true"></span> Заявки клиентов
+                    </NavLink>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+
+        <AuthorizeView>
             <NotAuthorized>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="login">
@@ -35,5 +48,6 @@
                 </div>
             </NotAuthorized>
         </AuthorizeView>
+
     </nav>
 </div>
